@@ -1,6 +1,6 @@
 import type { GolfClub } from '../types';
 
-const ENDPOINTS = [
+export const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ];

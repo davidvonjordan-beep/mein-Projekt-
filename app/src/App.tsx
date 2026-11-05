@@ -3,6 +3,9 @@ import type { GolfClub, Review } from './types';
 import { ClubMap, type MapStyle } from './components/ClubMap';
 import { ClubList } from './components/ClubList';
 import { ClubDetail } from './components/ClubDetail';
+import { CourseOverlay } from './components/CourseOverlay';
+import { CoursePanel } from './components/CoursePanel';
+import { useCourse } from './lib/useCourse';
 import { fetchGolfClubs } from './lib/overpass';
 import { demoClubsAround } from './data/demoClubs';
 import { distanceKm } from './lib/geo';
@@ -30,6 +33,8 @@ export default function App() {
   const [reviews, setReviews] = useState<Review[]>(loadReviews);
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
   const [sheetOpen, setSheetOpen] = useState(true);
+  const [courseClub, setCourseClub] = useState<GolfClub | null>(null);
+  const course = useCourse(courseClub);
   const abortRef = useRef<AbortController | null>(null);
   const lastSearch = useRef<{ lat: number; lon: number } | null>(null);
 
@@ -120,14 +125,30 @@ export default function App() {
       <ClubMap
         center={center}
         userPos={userPos}
-        clubs={visibleClubs}
+        clubs={courseClub ? [] : visibleClubs}
         selectedId={selectedId}
-        style={mapStyle}
+        style={courseClub ? 'satellite' : mapStyle}
         focus={focus}
+        fit={courseClub ? course.fit : null}
         onSelect={select}
         onMoved={onMoved}
-      />
+        onMapClick={courseClub ? (lat, lon) => course.setMeasure([lat, lon]) : undefined}
+      >
+        {courseClub && course.layout && (
+          <CourseOverlay
+            layout={course.layout}
+            hole={course.hole}
+            target={course.target?.target ?? null}
+            player={course.player}
+            playerIsGps={course.onCourse}
+            measure={course.measure}
+            unit={course.unit}
+          />
+        )}
+      </ClubMap>
 
+      {!courseClub && (
+      <>
       <header className="topbar">
         <div className="brand">⛳ <span>GolfMap</span></div>
         <input
@@ -160,6 +181,35 @@ export default function App() {
         </button>
       )}
 
+      </>
+      )}
+
+      {courseClub ? (
+        <aside className="panel open course-panel">
+          <CoursePanel
+            club={courseClub}
+            layout={course.layout}
+            loading={course.loading}
+            notice={course.notice}
+            hole={course.hole}
+            holeIdx={course.holeIdx}
+            distances={course.distances}
+            measureDistances={course.measureDistances}
+            positionInfo={{ gps: course.onCourse, accuracy: course.gpsAccuracy }}
+            unit={course.unit}
+            scores={course.scores}
+            onUnit={course.setUnit}
+            onHole={course.selectHole}
+            onScore={course.setScore}
+            onResetScores={course.resetScores}
+            onClearMeasure={() => course.setMeasure(null)}
+            onExit={() => {
+              setCourseClub(null);
+              setFocus({ lat: courseClub.lat, lon: courseClub.lon, zoom: 13 });
+            }}
+          />
+        </aside>
+      ) : (
       <aside className={`panel${sheetOpen ? ' open' : ''}`}>
         <button className="sheet-handle" onClick={() => setSheetOpen(!sheetOpen)} aria-label="Liste ein-/ausklappen">
           <span />
@@ -180,6 +230,7 @@ export default function App() {
               setFocus({ lat: selected.lat, lon: selected.lon, zoom: 16 });
               if (window.innerWidth < 768) setSheetOpen(false);
             }}
+            onPlay={() => setCourseClub(selected)}
             onAddReview={(stars, text, author) =>
               setReviews((r) => [...r, { clubId: selected.id, stars, text, author, date: new Date().toISOString() }])
             }
@@ -207,6 +258,7 @@ export default function App() {
           </>
         )}
       </aside>
+      )}
     </div>
   );
 }

@@ -24,3 +24,7 @@ export const loadReviews = () => read<Review[]>(REVIEWS_KEY, []);
 export const saveReviews = (r: Review[]) => write(REVIEWS_KEY, r);
 export const loadFavorites = () => read<string[]>(FAVS_KEY, []);
 export const saveFavorites = (f: string[]) => write(FAVS_KEY, f);
+
+const scoreKey = (clubId: string) => `golfmap.round.${clubId}`;
+export const loadScores = (clubId: string) => read<Record<number, number>>(scoreKey(clubId), {});
+export const saveScores = (clubId: string, s: Record<number, number>) => write(scoreKey(clubId), s);

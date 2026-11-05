@@ -12,10 +12,11 @@ interface Props {
   onClose: () => void;
   onToggleFavorite: () => void;
   onViewCourse: () => void;
+  onPlay: () => void;
   onAddReview: (stars: number, text: string, author: string) => void;
 }
 
-export function ClubDetail({ club, distance, reviews, isFavorite, onClose, onToggleFavorite, onViewCourse, onAddReview }: Props) {
+export function ClubDetail({ club, distance, reviews, isFavorite, onClose, onToggleFavorite, onViewCourse, onPlay, onAddReview }: Props) {
   const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
   const [author, setAuthor] = useState('');
@@ -52,7 +53,8 @@ export function ClubDetail({ club, distance, reviews, isFavorite, onClose, onTog
       </div>
 
       <div className="actions">
-        <button className="btn primary" onClick={onViewCourse}>🛰️ Platz ansehen</button>
+        <button className="btn primary" onClick={onPlay}>⛳ Auf dem Platz</button>
+        <button className="btn" onClick={onViewCourse}>🛰️ Platz ansehen</button>
         <a className="btn" href={routeUrl} target="_blank" rel="noreferrer">🧭 Route</a>
         <button className={`btn${isFavorite ? ' fav-on' : ''}`} onClick={onToggleFavorite}>
           {isFavorite ? '♥ Gemerkt' : '♡ Merken'}

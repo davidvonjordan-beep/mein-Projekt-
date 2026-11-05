@@ -158,3 +158,57 @@ a { color: var(--green); }
 .source { font-size: 12px; margin-top: 16px; }
 
 .leaflet-control-attribution { font-size: 10px; }
+
+/* ---------- Auf dem Platz ---------- */
+.course-panel { max-height: 48dvh; }
+@media (min-width: 768px) { .course-panel { top: 12px; max-height: calc(100dvh - 24px); bottom: auto; } }
+.course { padding: 14px 16px 18px; overflow-y: auto; display: grid; gap: 10px; }
+.course-head { display: flex; align-items: center; gap: 8px; }
+.course-title { flex: 1; min-width: 0; display: grid; font-size: 13px; }
+.course-title strong { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.unit-toggle { display: flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; }
+.unit-toggle button { border: none; background: none; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+.unit-toggle button.on { background: var(--green); color: #fff; }
+.center { text-align: center; margin: 0; }
+.course .notice { margin: 0; }
+
+.hole-nav { display: flex; align-items: center; gap: 10px; }
+.hole-nav .icon-btn { width: 40px; height: 40px; font-size: 22px; line-height: 1; }
+.hole-nav .icon-btn:disabled { opacity: .35; cursor: default; }
+.hole-info { flex: 1; text-align: center; display: grid; }
+.hole-no { font-size: 20px; font-weight: 700; }
+.hole-info .muted { font-size: 13px; }
+
+.green-dist { display: grid; grid-template-columns: 1fr 1.3fr 1fr; align-items: end; background: var(--green); color: #fff; border-radius: 14px; padding: 10px 6px; }
+.gd { display: grid; text-align: center; }
+.gd-value { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gd.big .gd-value { font-size: 40px; line-height: 1; }
+.gd-label { font-size: 12px; opacity: .85; }
+
+.pos-info { font-size: 12px; margin: 0; text-align: center; }
+.hint { font-size: 13px; color: var(--muted); margin: 0; text-align: center; }
+.measure { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #fff7d6; border-radius: 10px; padding: 8px 10px; font-size: 14px; }
+.measure .icon-btn { width: 28px; height: 28px; }
+
+.score-row { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.stepper { display: flex; align-items: center; gap: 4px; border: 1px solid var(--border); border-radius: 999px; padding: 2px; }
+.stepper button { width: 34px; height: 34px; border-radius: 50%; border: none; background: #eef2ef; font-size: 18px; cursor: pointer; }
+.stepper strong { min-width: 26px; text-align: center; font-size: 17px; }
+.link-btn { border: none; background: none; color: var(--green); cursor: pointer; padding: 4px; margin-left: auto; font-weight: 600; }
+.scorecard { overflow-x: auto; display: grid; gap: 6px; }
+.scorecard table { border-collapse: collapse; font-size: 13px; text-align: center; }
+.scorecard th, .scorecard td { border: 1px solid var(--border); padding: 4px 6px; min-width: 28px; }
+.scorecard th:first-child, .scorecard td:first-child { text-align: left; color: var(--muted); font-weight: 500; }
+.scorecard td { cursor: pointer; }
+.scorecard td.under { color: #c0392b; font-weight: 700; }
+.scorecard td.even { font-weight: 600; }
+.scorecard td.over { color: #1f4e9c; }
+.scorecard .link-btn { margin: 0; justify-self: start; }
+
+.dist-label {
+  transform: translate(-50%, -50%); display: inline-block; white-space: nowrap;
+  background: rgba(0,0,0,.75); color: #fff; font-weight: 700; font-size: 13px; padding: 3px 8px; border-radius: 999px;
+}
+.dist-label.tee-label { background: var(--green); }
+.flag { font-size: 22px; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); }
+.stepper strong.placeholder { color: #b5c0ba; font-weight: 500; }
