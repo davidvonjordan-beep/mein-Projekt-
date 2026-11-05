@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { CourseLayout, GolfClub, LatLon } from '../types';
+import type { CourseLayout, GolfClub, LatLon, Round } from '../types';
 import { fetchCourseLayout, holeTarget } from './courseLayout';
 import { demoCourseLayout } from '../data/demoCourse';
 import { distM, greenDistances, toXY, type Unit } from './courseGeo';
-import { loadScores, saveScores } from './storage';
+import { archiveRound, clubStats, loadCurrentRound, loadHistory, newRound, saveCurrentRound, suggestClub } from './rounds';
 
 /** Ab dieser Entfernung zum Club gilt der Spieler als „nicht auf dem Platz“. */
 const ON_COURSE_RADIUS_M = 3000;
@@ -16,7 +16,9 @@ export function useCourse(club: GolfClub | null) {
   const [gps, setGps] = useState<{ pos: LatLon; accuracy: number } | null>(null);
   const [measure, setMeasure] = useState<LatLon | null>(null);
   const [unit, setUnit] = useState<Unit>('m');
-  const [scores, setScores] = useState<Record<number, number>>({});
+  const [round, setRound] = useState<Round | null>(null);
+  const [selectedClub, setSelectedClub] = useState('Dr');
+  const [history, setHistory] = useState<Round[]>(loadHistory);
   const [fitKey, setFitKey] = useState(0);
   const [followHole, setFollowHole] = useState(true);
 
@@ -27,7 +29,7 @@ export function useCourse(club: GolfClub | null) {
     setHoleIdx(0);
     setMeasure(null);
     if (!club) return;
-    setScores(loadScores(club.id));
+    setRound(loadCurrentRound(club));
     const applyLayout = (l: CourseLayout) => {
       setLayout(l);
       if (!l.holes.length)
@@ -63,8 +65,8 @@ export function useCourse(club: GolfClub | null) {
   }, [club]);
 
   useEffect(() => {
-    if (club) saveScores(club.id, scores);
-  }, [club, scores]);
+    if (round) saveCurrentRound(round);
+  }, [round]);
 
   const hole = layout?.holes[holeIdx] ?? null;
   const target = useMemo(() => (hole && layout ? holeTarget(hole, layout) : null), [hole, layout]);
@@ -84,6 +86,28 @@ export function useCourse(club: GolfClub | null) {
     return ((Math.atan2(x, y) * 180) / Math.PI + 360) % 360;
   }, [hole, target]);
   const bearing = followHole && hole ? holeBearing : 0;
+
+  const scores = round?.scores ?? {};
+  const holeShots = useMemo(
+    () => (round && hole ? round.shots.filter((x) => x.hole === hole.ref).sort((a, b) => a.t - b.t) : []),
+    [round, hole],
+  );
+  /** Ballposition für den nächsten Schlag: markierter Punkt > GPS > Abschlag (erster Schlag) */
+  const lastShot = holeShots[holeShots.length - 1];
+  const shotPos: { pos: LatLon; source: 'measure' | 'gps' | 'tee' | 'last' } | null = measure
+    ? { pos: measure, source: 'measure' }
+    : onCourse
+      ? { pos: gps!.pos, source: 'gps' }
+      : hole && holeShots.length === 0
+        ? { pos: hole.path[0], source: 'tee' }
+        : selectedClub === 'Pt' && lastShot
+          ? { pos: lastShot.pos, source: 'last' } // weiterer Putt ohne neue Position
+          : null;
+
+  const stats = useMemo(() => clubStats(round ? [round, ...history.filter((h) => h.id !== round.id)] : history), [round, history]);
+  const suggestion = distances ? suggestClub(stats, distances.center) : null;
+
+  const updateRound = (fn: (r: Round) => Round) => setRound((r) => (r ? fn(r) : r));
 
   const fit = useMemo(() => {
     if (!club) return null;
@@ -117,7 +141,43 @@ export function useCourse(club: GolfClub | null) {
       setHoleIdx(i);
       setMeasure(null);
     },
-    setScore: (ref: number, strokes: number) => setScores((s) => ({ ...s, [ref]: strokes })),
-    resetScores: () => setScores({}),
+    round,
+    holeShots,
+    shotPos,
+    stats,
+    suggestion,
+    selectedClub,
+    setSelectedClub,
+    setScore: (ref: number, strokes: number) =>
+      updateRound((r) => ({
+        ...r,
+        scores: { ...r.scores, [ref]: strokes },
+        pars: hole?.par ? { ...r.pars, [ref]: hole.par } : r.pars,
+      })),
+    recordShot: () => {
+      if (!hole || !shotPos) return;
+      updateRound((r) => {
+        const count = r.shots.filter((x) => x.hole === hole.ref).length + 1;
+        return {
+          ...r,
+          shots: [...r.shots, { hole: hole.ref, club: selectedClub, pos: shotPos.pos, t: Date.now() }],
+          scores: { ...r.scores, [hole.ref]: Math.max(r.scores[hole.ref] ?? 0, count) },
+          pars: hole.par ? { ...r.pars, [hole.ref]: hole.par } : r.pars,
+        };
+      });
+      setMeasure(null);
+    },
+    undoShot: () => {
+      const last = holeShots[holeShots.length - 1];
+      if (!last) return;
+      updateRound((r) => ({ ...r, shots: r.shots.filter((x) => x !== last) }));
+    },
+    /** Runde ins Archiv und neue Runde beginnen */
+    finishRound: () => {
+      if (!round || !club) return;
+      archiveRound(round);
+      setHistory(loadHistory());
+      setRound(newRound(club));
+    },
   };
 }

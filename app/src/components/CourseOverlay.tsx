@@ -1,6 +1,6 @@
 import L from 'leaflet';
 import { CircleMarker, Marker, Polygon, Polyline } from 'react-leaflet';
-import type { CourseFeatureKind, CourseHole, CourseLayout, LatLon } from '../types';
+import type { CourseFeatureKind, CourseHole, CourseLayout, LatLon, Shot } from '../types';
 import { distM, formatLen, type Unit } from '../lib/courseGeo';
 
 const STYLE: Record<CourseFeatureKind, L.PathOptions> = {
@@ -28,9 +28,10 @@ interface Props {
   playerIsGps: boolean;
   measure: LatLon | null;
   unit: Unit;
+  shots: Shot[];
 }
 
-export function CourseOverlay({ layout, hole, target, player, playerIsGps, measure, unit }: Props) {
+export function CourseOverlay({ layout, hole, target, player, playerIsGps, measure, unit, shots }: Props) {
   const features = [...layout.features].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
   return (
     <>
@@ -49,6 +50,13 @@ export function CourseOverlay({ layout, hole, target, player, playerIsGps, measu
         </>
       )}
       {target && <Marker position={target} icon={pinIcon} interactive={false} />}
+
+      {shots.length > 1 && (
+        <Polyline positions={shots.map((x) => x.pos)} pathOptions={{ color: '#ff8a3d', weight: 3 }} interactive={false} />
+      )}
+      {shots.map((x, i) => (
+        <Marker key={x.t} position={x.pos} icon={label(`${i + 1} · ${x.club === 'Pt' ? 'Putt' : x.club}`, 'shot-label')} interactive={false} />
+      ))}
 
       {player && measure && target && (
         <>

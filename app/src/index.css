@@ -221,3 +221,47 @@ a { color: var(--green); }
 .needle { display: grid; place-items: center; line-height: 1; color: #e4572e; font-size: 16px; transition: transform .4s ease; }
 .needle .n { font-size: 10px; font-weight: 800; color: var(--text); margin-bottom: -2px; }
 .leaflet-pitch-sky { display: none; }
+
+/* ---------- Schläge erfassen ---------- */
+.suggestion { margin: 0; font-size: 14px; text-align: center; }
+.shots { display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 10px; }
+.club-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.club-chips button {
+  flex-shrink: 0; border: 1px solid var(--border); background: var(--bg); border-radius: 8px;
+  padding: 6px 9px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.club-chips button.on { background: var(--green); border-color: var(--green); color: #fff; }
+.shot-actions { display: flex; gap: 8px; align-items: center; }
+.shot-actions .btn { flex: 1; }
+.shot-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; }
+.shot-list li { display: flex; gap: 6px; align-items: center; background: #fff1e6; border-radius: 999px; padding: 3px 10px 3px 3px; }
+.shot-no { background: #ff8a3d; color: #fff; border-radius: 50%; width: 20px; height: 20px; display: grid; place-items: center; font-weight: 700; font-size: 11px; }
+.dist-label.shot-label { background: #ff8a3d; font-size: 11px; transform: translate(-50%, -140%); }
+
+/* ---------- Meine Runden ---------- */
+.stats { padding: 0 16px 24px; overflow-y: auto; }
+@media (min-width: 768px) { .stats { padding-top: 16px; } }
+.stats h2 { margin: 0; font-size: 21px; }
+.filters { flex-wrap: wrap; }
+.tabs { display: flex; gap: 4px; background: #eef2ef; border-radius: 10px; padding: 3px; margin: 14px 0; }
+.tabs button { flex: 1; border: none; background: none; border-radius: 8px; padding: 7px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--muted); }
+.tabs button.on { background: var(--bg); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.round-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.round { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.round-head { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; border: none; background: none; padding: 12px; cursor: pointer; text-align: left; }
+.round-head > div:first-child { display: grid; gap: 2px; font-size: 14px; }
+.round-score { display: flex; align-items: baseline; gap: 6px; }
+.round-score strong { font-size: 22px; }
+.round-score span { font-weight: 700; font-size: 14px; }
+.round-score .under, .scorecard td.under { color: #c0392b; }
+.round-score .over { color: #1f4e9c; }
+.round-body { padding: 0 12px 12px; display: grid; gap: 8px; }
+.small { font-size: 13px; margin: 0; }
+.link-btn.danger { color: #c0392b; margin: 0; justify-self: start; font-weight: 500; }
+.club-stats { display: grid; gap: 10px; }
+.club-stat { display: grid; grid-template-columns: 110px 1fr; gap: 2px 10px; align-items: center; font-size: 14px; }
+.cs-bar { position: relative; height: 10px; background: #eef2ef; border-radius: 5px; overflow: hidden; }
+.cs-bar span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px; }
+.cs-max { background: #b8e0c8; }
+.cs-avg { background: var(--green); }
+.cs-val { grid-column: 2; font-size: 13px; }

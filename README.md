@@ -13,6 +13,9 @@ mit Infos, Satellitenansicht des Platzes und Bewertungen.
 - ⛳ **Auf dem Platz**: Lochübersicht mit Fairways, Grüns, Bunkern und Wasser (aus OpenStreetMap),
   GPS-Entfernungsmesser zum Grün (vorne / Mitte / hinten), Messen per Antippen der Karte,
   Meter/Yards und Scorekarte (Schläge pro Loch, Gesamt zu Par)
+- 🏌️ Schläge erfassen: Schläger wählen, „Schlag von hier“ (GPS oder angetippte Ballposition) –
+  die Weite wird bis zum nächsten Schlag gemessen; Schlägerempfehlung nach deinen Durchschnittsweiten
+- 📊 Meine Runden: gespeicherte Runden mit Scorekarte und Ergebnis zu Par, Schlägerweiten-Statistik
 - 🧭 Karte dreht sich automatisch in Spielrichtung (Abschlag unten, Grün oben), per Kompass-Knopf umschaltbar auf Norden oben
 - 📱 Mobil: Bottom-Sheet wie bei Google Maps · Desktop: Seitenleiste
 
@@ -21,7 +24,7 @@ mit Infos, Satellitenansicht des Platzes und Bewertungen.
 - Karte: OpenStreetMap-Kacheln · Satellit: Esri World Imagery
 - Fällt OpenStreetMap aus, werden fiktive Demo-Clubs (inkl. erfundenem 9-Loch-Layout) angezeigt
 - Loch-Daten gibt es nur für Plätze, die in OpenStreetMap detailliert erfasst sind
-- Bewertungen & Favoriten werden aktuell nur lokal im Browser gespeichert
+- Bewertungen, Favoriten, Runden & Schläge werden aktuell nur lokal im Browser gespeichert
 
 ## Starten
 ```bash
@@ -34,5 +37,5 @@ Dann http://localhost:5173 öffnen (Standortfreigabe erlauben).
 ## Nächste Schritte (Ideen)
 - Backend + Login, damit Bewertungen für alle Nutzer sichtbar sind
 - Fotos der Plätze, Greenfee-Preise, Startzeiten-Buchung
-- Schlagstatistik, Runden-Historie
+- Handicap-Berechnung, Statistik zu Fairway-/Grüntreffern und Putts
 - Als echte iOS/Android-App verpacken (z. B. PWA oder Capacitor)

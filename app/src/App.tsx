@@ -5,6 +5,7 @@ import { ClubList } from './components/ClubList';
 import { ClubDetail } from './components/ClubDetail';
 import { CourseOverlay } from './components/CourseOverlay';
 import { CoursePanel } from './components/CoursePanel';
+import { StatsView } from './components/StatsView';
 import { useCourse } from './lib/useCourse';
 import { fetchGolfClubs } from './lib/overpass';
 import { demoClubsAround } from './data/demoClubs';
@@ -33,6 +34,7 @@ export default function App() {
   const [reviews, setReviews] = useState<Review[]>(loadReviews);
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
   const [sheetOpen, setSheetOpen] = useState(true);
+  const [statsOpen, setStatsOpen] = useState(false);
   const [courseClub, setCourseClub] = useState<GolfClub | null>(null);
   const course = useCourse(courseClub);
   const abortRef = useRef<AbortController | null>(null);
@@ -144,6 +146,7 @@ export default function App() {
             playerIsGps={course.onCourse}
             measure={course.measure}
             unit={course.unit}
+            shots={course.holeShots}
           />
         )}
       </ClubMap>
@@ -217,7 +220,14 @@ export default function App() {
             onUnit={course.setUnit}
             onHole={course.selectHole}
             onScore={course.setScore}
-            onResetScores={course.resetScores}
+            onFinishRound={course.finishRound}
+            holeShots={course.holeShots}
+            shotPos={course.shotPos}
+            selectedClub={course.selectedClub}
+            suggestion={course.suggestion}
+            onSelectClub={course.setSelectedClub}
+            onRecordShot={course.recordShot}
+            onUndoShot={course.undoShot}
             onClearMeasure={() => course.setMeasure(null)}
             onExit={() => {
               setCourseClub(null);
@@ -251,6 +261,8 @@ export default function App() {
               setReviews((r) => [...r, { clubId: selected.id, stars, text, author, date: new Date().toISOString() }])
             }
           />
+        ) : statsOpen ? (
+          <StatsView onClose={() => setStatsOpen(false)} />
         ) : (
           <>
             <div className="panel-head">
@@ -266,6 +278,9 @@ export default function App() {
                 </select>
                 <button className={`chip-btn${onlyFavs ? ' on' : ''}`} onClick={() => setOnlyFavs(!onlyFavs)}>
                   ♥ Favoriten
+                </button>
+                <button className="chip-btn" onClick={() => setStatsOpen(true)}>
+                  📊 Meine Runden
                 </button>
               </div>
               {notice && <p className="notice">{notice}</p>}

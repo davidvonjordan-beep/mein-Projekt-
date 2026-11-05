@@ -47,3 +47,20 @@ export interface CourseLayout {
   features: CourseFeature[];
   pins: LatLon[];
 }
+
+export interface Shot {
+  hole: number;
+  club: string;
+  pos: LatLon;
+  t: number;
+}
+
+export interface Round {
+  id: string;
+  clubId: string;
+  clubName: string;
+  date: string;
+  scores: Record<number, number>;
+  pars: Record<number, number>;
+  shots: Shot[];
+}

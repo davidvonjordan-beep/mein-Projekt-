@@ -3,7 +3,7 @@ import type { Review } from '../types';
 const REVIEWS_KEY = 'golfmap.reviews.v1';
 const FAVS_KEY = 'golfmap.favorites.v1';
 
-function read<T>(key: string, fallback: T): T {
+export function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -12,7 +12,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write(key: string, value: unknown) {
+export function write(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -25,6 +25,3 @@ export const saveReviews = (r: Review[]) => write(REVIEWS_KEY, r);
 export const loadFavorites = () => read<string[]>(FAVS_KEY, []);
 export const saveFavorites = (f: string[]) => write(FAVS_KEY, f);
 
-const scoreKey = (clubId: string) => `golfmap.round.${clubId}`;
-export const loadScores = (clubId: string) => read<Record<number, number>>(scoreKey(clubId), {});
-export const saveScores = (clubId: string, s: Record<number, number>) => write(scoreKey(clubId), s);

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { CourseHole, CourseLayout, GolfClub } from '../types';
+import type { CourseHole, CourseLayout, GolfClub, LatLon, Shot } from '../types';
+import { CLUBS, clubLabel, shotDistances, type ClubStat } from '../lib/rounds';
 import { formatLen, pathLength, type GreenDistances, type Unit } from '../lib/courseGeo';
 
 interface Props {
@@ -17,7 +18,14 @@ interface Props {
   onUnit: (u: Unit) => void;
   onHole: (idx: number) => void;
   onScore: (ref: number, strokes: number) => void;
-  onResetScores: () => void;
+  onFinishRound: () => void;
+  holeShots: Shot[];
+  shotPos: { pos: LatLon; source: 'measure' | 'gps' | 'tee' | 'last' } | null;
+  selectedClub: string;
+  suggestion: ClubStat | null;
+  onSelectClub: (c: string) => void;
+  onRecordShot: () => void;
+  onUndoShot: () => void;
   onClearMeasure: () => void;
   onExit: () => void;
 }
@@ -97,6 +105,47 @@ export function CoursePanel(p: Props) {
         <p className="hint">Tippe auf die Karte, um eine Entfernung zu messen (z. B. bis zum Bunker).</p>
       )}
 
+      {hole && p.suggestion && p.distances && (
+        <p className="suggestion">
+          💡 Empfehlung: <strong>{clubLabel(p.suggestion.club)}</strong>{' '}
+          <span className="muted">(Ø {formatLen(p.suggestion.avg, unit)} {unit})</span>
+        </p>
+      )}
+
+      {hole && (
+        <div className="shots">
+          <div className="club-chips">
+            {CLUBS.map((c) => (
+              <button key={c.id} className={c.id === p.selectedClub ? 'on' : ''} onClick={() => p.onSelectClub(c.id)} title={c.label}>
+                {c.id === 'Pt' ? 'Putt' : c.id}
+              </button>
+            ))}
+          </div>
+          <div className="shot-actions">
+            <button className="btn primary" disabled={!p.shotPos} onClick={p.onRecordShot}>
+              {p.shotPos?.source === 'last'
+                ? '📍 Weiteren Putt erfassen'
+                : `📍 Schlag mit ${clubLabel(p.selectedClub)} ${p.shotPos?.source === 'measure' ? 'vom Punkt' : p.shotPos?.source === 'tee' ? 'vom Abschlag' : 'von hier'}`}
+            </button>
+            {p.holeShots.length > 0 && (
+              <button className="icon-btn" onClick={p.onUndoShot} title="Letzten Schlag löschen" aria-label="Letzten Schlag löschen">↶</button>
+            )}
+          </div>
+          {!p.shotPos && <p className="hint">Tippe auf der Karte auf die Ballposition, um den nächsten Schlag zu erfassen.</p>}
+          {p.holeShots.length > 0 && (
+            <ol className="shot-list">
+              {shotDistances(p.holeShots).map(({ shot, distance }, i) => (
+                <li key={shot.t}>
+                  <span className="shot-no">{i + 1}</span>
+                  {clubLabel(shot.club)}
+                  <span className="muted">{distance == null ? '…' : distance < 1 ? '' : `${formatLen(distance, unit)} ${unit}`}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      )}
+
       {hole && (
         <div className="score-row">
           <span>Schläge</span>
@@ -134,8 +183,8 @@ export function CoursePanel(p: Props) {
               </tr>
             </tbody>
           </table>
-          <button className="link-btn" onClick={() => confirm('Neue Runde starten und Scores löschen?') && p.onResetScores()}>
-            Neue Runde starten
+          <button className="link-btn" onClick={() => confirm('Runde beenden und unter „Meine Runden“ speichern?') && p.onFinishRound()}>
+            ✓ Runde beenden & speichern
           </button>
         </div>
       )}
