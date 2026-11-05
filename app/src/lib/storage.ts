@@ -1,6 +1,3 @@
-import type { Review } from '../types';
-
-const REVIEWS_KEY = 'golfmap.reviews.v1';
 const FAVS_KEY = 'golfmap.favorites.v1';
 
 export function read<T>(key: string, fallback: T): T {
@@ -20,8 +17,6 @@ export function write(key: string, value: unknown) {
   }
 }
 
-export const loadReviews = () => read<Review[]>(REVIEWS_KEY, []);
-export const saveReviews = (r: Review[]) => write(REVIEWS_KEY, r);
 export const loadFavorites = () => read<string[]>(FAVS_KEY, []);
 export const saveFavorites = (f: string[]) => write(FAVS_KEY, f);
 

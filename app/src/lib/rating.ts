@@ -1,15 +1,16 @@
-import type { GolfClub, Review } from '../types';
+import type { GolfClub } from '../types';
+import type { RatingSummary as ServerSummary } from './api';
 
 export interface RatingSummary {
   average: number;
   count: number;
 }
 
-export function ratingFor(club: GolfClub, reviews: Review[]): RatingSummary {
-  const own = reviews.filter((r) => r.clubId === club.id);
+/** Kombiniert Bewertungen aus der Datenquelle (Demo) mit den Bewertungen der App-Nutzer. */
+export function ratingFor(club: GolfClub, server?: ServerSummary): RatingSummary {
   const baseCount = club.baseRatingCount ?? 0;
   const baseSum = (club.baseRating ?? 0) * baseCount;
-  const count = baseCount + own.length;
-  const sum = baseSum + own.reduce((s, r) => s + r.stars, 0);
+  const count = baseCount + (server?.count ?? 0);
+  const sum = baseSum + (server ? server.avg * server.count : 0);
   return { average: count ? sum / count : 0, count };
 }

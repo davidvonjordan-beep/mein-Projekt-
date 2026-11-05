@@ -3,7 +3,17 @@ import type { CourseLayout, GolfClub, LatLon, Round } from '../types';
 import { fetchCourseLayout, holeTarget } from './courseLayout';
 import { demoCourseLayout } from '../data/demoCourse';
 import { distM, greenDistances, toXY, type Unit } from './courseGeo';
-import { archiveRound, clubStats, loadCurrentRound, loadHistory, newRound, saveCurrentRound, suggestClub } from './rounds';
+import {
+  archiveRound,
+  clubStats,
+  loadCurrentRound,
+  loadHistory,
+  newRound,
+  ROUNDS_CHANGED,
+  saveCurrentRound,
+  suggestClub,
+  syncRounds,
+} from './rounds';
 
 /** Ab dieser Entfernung zum Club gilt der Spieler als „nicht auf dem Platz“. */
 const ON_COURSE_RADIUS_M = 3000;
@@ -65,8 +75,24 @@ export function useCourse(club: GolfClub | null) {
   }, [club]);
 
   useEffect(() => {
-    if (round) saveCurrentRound(round);
+    if (!round) return;
+    saveCurrentRound(round);
+    // kurz warten, damit nicht jeder Tipp einzeln übertragen wird
+    const t = setTimeout(() => syncRounds(), 3000);
+    return () => clearTimeout(t);
   }, [round]);
+
+  // Nach einem Abgleich: Historie neu laden und ggf. neuere Version der laufenden Runde übernehmen
+  useEffect(() => {
+    const onChange = () => {
+      setHistory(loadHistory());
+      if (!club) return;
+      const stored = loadCurrentRound(club);
+      setRound((r) => (!r || stored.id !== r.id || stored.updatedAt > r.updatedAt ? stored : r));
+    };
+    window.addEventListener(ROUNDS_CHANGED, onChange);
+    return () => window.removeEventListener(ROUNDS_CHANGED, onChange);
+  }, [club]);
 
   const hole = layout?.holes[holeIdx] ?? null;
   const target = useMemo(() => (hole && layout ? holeTarget(hole, layout) : null), [hole, layout]);
@@ -107,7 +133,7 @@ export function useCourse(club: GolfClub | null) {
   const stats = useMemo(() => clubStats(round ? [round, ...history.filter((h) => h.id !== round.id)] : history), [round, history]);
   const suggestion = distances ? suggestClub(stats, distances.center) : null;
 
-  const updateRound = (fn: (r: Round) => Round) => setRound((r) => (r ? fn(r) : r));
+  const updateRound = (fn: (r: Round) => Round) => setRound((r) => (r ? { ...fn(r), updatedAt: Date.now() } : r));
 
   const fit = useMemo(() => {
     if (!club) return null;
@@ -178,6 +204,7 @@ export function useCourse(club: GolfClub | null) {
       archiveRound(round);
       setHistory(loadHistory());
       setRound(newRound(club));
+      syncRounds();
     },
   };
 }

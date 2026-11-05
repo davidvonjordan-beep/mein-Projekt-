@@ -17,14 +17,6 @@ export interface GolfClub {
   source: 'osm' | 'demo';
 }
 
-export interface Review {
-  clubId: string;
-  stars: number;
-  text: string;
-  author: string;
-  date: string;
-}
-
 export type LatLon = [number, number];
 
 export type CourseFeatureKind = 'fairway' | 'green' | 'tee' | 'bunker' | 'water' | 'rough';
@@ -63,4 +55,9 @@ export interface Round {
   scores: Record<number, number>;
   pars: Record<number, number>;
   shots: Shot[];
+  /** Zeitpunkt der letzten Änderung (ms) – neuere Version gewinnt beim Abgleich */
+  updatedAt: number;
+  finished?: boolean;
+  /** Stand, der zuletzt erfolgreich zum Server übertragen wurde */
+  syncedAt?: number;
 }

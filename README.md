@@ -19,23 +19,48 @@ mit Infos, Satellitenansicht des Platzes und Bewertungen.
 - 🧭 Karte dreht sich automatisch in Spielrichtung (Abschlag unten, Grün oben), per Kompass-Knopf umschaltbar auf Norden oben
 - 📱 Mobil: Bottom-Sheet wie bei Google Maps · Desktop: Seitenleiste
 
+- 👤 Konto (E-Mail + Passwort): Bewertungen für alle sichtbar, Runden, Schläge und Favoriten
+  werden gesichert und zwischen Geräten synchronisiert – auch offline auf dem Platz nutzbar
+
+## Aufbau
+- `app/` – Web-App (React, Vite, Leaflet)
+- `server/` – API-Server (Node.js, Express, SQLite) für Konten, Bewertungen, Favoriten und Runden
+
 ## Datenquellen
 - Golfplätze: OpenStreetMap über die Overpass API (kostenlos, kein API-Key)
 - Karte: OpenStreetMap-Kacheln · Satellit: Esri World Imagery
 - Fällt OpenStreetMap aus, werden fiktive Demo-Clubs (inkl. erfundenem 9-Loch-Layout) angezeigt
 - Loch-Daten gibt es nur für Plätze, die in OpenStreetMap detailliert erfasst sind
-- Bewertungen, Favoriten, Runden & Schläge werden aktuell nur lokal im Browser gespeichert
+- Bewertungen, Favoriten, Runden & Schläge: GolfMap-Server (SQLite-Datei `server/data/golfmap.db`)
+- Ohne Anmeldung bleiben Runden & Favoriten lokal im Browser; beim Anmelden werden sie ins Konto übernommen
 
-## Starten
+## Starten (Entwicklung)
+Benötigt Node.js 22.18 oder neuer. Zwei Terminals:
 ```bash
+# 1. Server (http://localhost:3001)
+cd server
+npm install
+npm run dev
+
+# 2. App (http://localhost:5173, leitet /api an den Server weiter)
 cd app
 npm install
 npm run dev
 ```
-Dann http://localhost:5173 öffnen (Standortfreigabe erlauben).
+Tests des Servers: `cd server && npm test`
+
+## Betrieb (Produktion)
+```bash
+cd app && npm install && npm run build      # baut die App nach app/dist
+cd ../server && npm install && npm start    # liefert App + API auf Port 3001 aus
+```
+Einstellungen per Umgebungsvariablen: `PORT`, `DB_FILE` (Pfad zur SQLite-Datei), `STATIC_DIR`.
+Wichtig: Öffentlich nur über **HTTPS** betreiben (sonst kein GPS im Handy-Browser und unsichere Logins)
+und die Datenbankdatei regelmäßig sichern.
 
 ## Nächste Schritte (Ideen)
-- Backend + Login, damit Bewertungen für alle Nutzer sichtbar sind
+- Passwort vergessen (E-Mail-Versand), Bewertungen melden/moderieren
+- Server online stellen (z. B. Render, Fly.io, Hetzner)
 - Fotos der Plätze, Greenfee-Preise, Startzeiten-Buchung
 - Handicap-Berechnung, Statistik zu Fairway-/Grüntreffern und Putts
 - Als echte iOS/Android-App verpacken (z. B. PWA oder Capacitor)

@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import type { GolfClub, Review } from '../types';
+import { useCallback, useEffect, useState } from 'react';
+import type { GolfClub } from '../types';
+import { api, type RatingSummary, type ServerReview } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { formatDistance } from '../lib/geo';
 import { ratingFor } from '../lib/rating';
 import { StarRating } from './StarRating';
@@ -7,29 +9,57 @@ import { StarRating } from './StarRating';
 interface Props {
   club: GolfClub;
   distance: number | null;
-  reviews: Review[];
+  rating?: RatingSummary;
   isFavorite: boolean;
   onClose: () => void;
   onToggleFavorite: () => void;
   onViewCourse: () => void;
   onPlay: () => void;
-  onAddReview: (stars: number, text: string, author: string) => void;
+  onReviewed: () => void;
+  onRequireLogin: (reason: string) => void;
 }
 
-export function ClubDetail({ club, distance, reviews, isFavorite, onClose, onToggleFavorite, onViewCourse, onPlay, onAddReview }: Props) {
+export function ClubDetail({ club, distance, rating: serverRating, isFavorite, onClose, onToggleFavorite, onViewCourse, onPlay, onReviewed, onRequireLogin }: Props) {
+  const { user } = useAuth();
   const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
-  const [author, setAuthor] = useState('');
-  const rating = ratingFor(club, reviews);
-  const clubReviews = reviews.filter((r) => r.clubId === club.id).slice().reverse();
+  const [clubReviews, setClubReviews] = useState<ServerReview[] | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const rating = ratingFor(club, serverRating);
+  const mine = clubReviews?.find((r) => r.mine);
+
+  const loadReviews = useCallback(() => {
+    api
+      .reviews(club.id)
+      .then(setClubReviews)
+      .catch(() => setClubReviews([]));
+  }, [club.id]);
+  useEffect(loadReviews, [loadReviews, user]);
+
+  // Eigene Bewertung zum Bearbeiten vorausfüllen
+  useEffect(() => {
+    if (mine) {
+      setStars(mine.stars);
+      setText(mine.text);
+    }
+  }, [mine]);
   const routeUrl = `https://www.google.com/maps/dir/?api=1&destination=${club.lat},${club.lon}`;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!stars) return;
-    onAddReview(stars, text.trim(), author.trim() || 'Anonym');
-    setStars(0);
-    setText('');
+    setSending(true);
+    setReviewError(null);
+    try {
+      await api.addReview(club.id, stars, text.trim());
+      loadReviews();
+      onReviewed();
+    } catch (err) {
+      setReviewError((err as Error).message);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -81,17 +111,27 @@ export function ClubDetail({ club, distance, reviews, isFavorite, onClose, onTog
 
       <section className="reviews">
         <h3>Bewertungen</h3>
-        <form className="review-form" onSubmit={submit}>
-          <label>Deine Bewertung</label>
-          <StarRating value={stars} onChange={setStars} size={26} />
-          <input placeholder="Dein Name (optional)" value={author} onChange={(e) => setAuthor(e.target.value)} />
-          <textarea placeholder="Wie war der Platz? Greens, Service, Preis-Leistung …" value={text} onChange={(e) => setText(e.target.value)} rows={3} />
-          <button className="btn primary" disabled={!stars}>Bewertung abgeben</button>
-        </form>
-        {clubReviews.map((r, i) => (
-          <article key={i} className="review">
+        {user ? (
+          <form className="review-form" onSubmit={submit}>
+            <label>{mine ? 'Deine Bewertung bearbeiten' : `Deine Bewertung als ${user.name}`}</label>
+            <StarRating value={stars} onChange={setStars} size={26} />
+            <textarea placeholder="Wie war der Platz? Greens, Service, Preis-Leistung …" value={text} onChange={(e) => setText(e.target.value)} rows={3} />
+            {reviewError && <p className="error">{reviewError}</p>}
+            <button className="btn primary" disabled={!stars || sending}>
+              {sending ? 'Wird gespeichert …' : mine ? 'Bewertung aktualisieren' : 'Bewertung abgeben'}
+            </button>
+          </form>
+        ) : (
+          <div className="review-form">
+            <p className="small">Melde dich an, um diesen Platz zu bewerten.</p>
+            <button className="btn primary" onClick={() => onRequireLogin('Melde dich an, um Plätze zu bewerten.')}>Anmelden</button>
+          </div>
+        )}
+        {clubReviews === null && <p className="muted small">Lade Bewertungen …</p>}
+        {clubReviews?.map((r) => (
+          <article key={r.id} className="review">
             <div className="review-head">
-              <strong>{r.author}</strong>
+              <strong>{r.author}{r.mine && ' (du)'}</strong>
               <StarRating value={r.stars} size={13} />
               <span className="muted">{new Date(r.date).toLocaleDateString('de-DE')}</span>
             </div>

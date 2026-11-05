@@ -1,0 +1,23 @@
+{
+  "name": "golfmap-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node --watch --disable-warning=ExperimentalWarning src/index.ts",
+    "start": "node --disable-warning=ExperimentalWarning src/index.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.ts",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2"
+  }
+}

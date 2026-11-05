@@ -1,15 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../lib/auth';
 import type { Round } from '../types';
-import { clubLabel, clubStats, deleteRound, formatToPar, loadHistory, roundTotals, shotDistances } from '../lib/rounds';
+import { clubLabel, clubStats, deleteRound, formatToPar, loadHistory, ROUNDS_CHANGED, roundTotals, shotDistances, syncRounds } from '../lib/rounds';
 
 interface Props {
   onClose: () => void;
+  onLogin: () => void;
 }
 
-export function StatsView({ onClose }: Props) {
+export function StatsView({ onClose, onLogin }: Props) {
+  const { user } = useAuth();
   const [tab, setTab] = useState<'rounds' | 'clubs'>('rounds');
   const [history, setHistory] = useState<Round[]>(loadHistory);
   const [openId, setOpenId] = useState<string | null>(null);
+  useEffect(() => {
+    const reload = () => setHistory(loadHistory());
+    window.addEventListener(ROUNDS_CHANGED, reload);
+    syncRounds();
+    return () => window.removeEventListener(ROUNDS_CHANGED, reload);
+  }, [user]);
   const stats = clubStats(history);
   const maxAvg = Math.max(1, ...stats.map((s) => s.max));
 
@@ -19,6 +28,12 @@ export function StatsView({ onClose }: Props) {
         <h2>Meine Runden</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Schließen">✕</button>
       </div>
+      {!user && (
+        <div className="notice sync-hint">
+          Deine Runden sind nur auf diesem Gerät gespeichert.{' '}
+          <button className="link-btn inline" onClick={onLogin}>Anmelden & sichern</button>
+        </div>
+      )}
       <div className="tabs">
         <button className={tab === 'rounds' ? 'on' : ''} onClick={() => setTab('rounds')}>Runden ({history.length})</button>
         <button className={tab === 'clubs' ? 'on' : ''} onClick={() => setTab('clubs')}>Schlägerweiten</button>
@@ -85,6 +100,7 @@ export function StatsView({ onClose }: Props) {
                           if (!confirm('Diese Runde löschen?')) return;
                           deleteRound(r.id);
                           setHistory(loadHistory());
+                          syncRounds();
                         }}
                       >
                         Runde löschen

@@ -1,24 +1,25 @@
-import type { GolfClub, Review } from '../types';
+import type { GolfClub } from '../types';
+import type { RatingSummary } from '../lib/api';
 import { formatDistance } from '../lib/geo';
 import { ratingFor } from '../lib/rating';
 import { StarRating } from './StarRating';
 
 interface Props {
   clubs: Array<GolfClub & { distance: number | null }>;
-  reviews: Review[];
+  ratings: Record<string, RatingSummary>;
   favorites: string[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
 
-export function ClubList({ clubs, reviews, favorites, selectedId, onSelect }: Props) {
+export function ClubList({ clubs, ratings, favorites, selectedId, onSelect }: Props) {
   if (!clubs.length) {
     return <p className="empty">Keine Golfplätze gefunden. Verschiebe die Karte oder zoome heraus.</p>;
   }
   return (
     <ul className="club-list">
       {clubs.map((c) => {
-        const r = ratingFor(c, reviews);
+        const r = ratingFor(c, ratings[c.id]);
         return (
           <li key={c.id}>
             <button className={`club-item${c.id === selectedId ? ' selected' : ''}`} onClick={() => onSelect(c.id)}>

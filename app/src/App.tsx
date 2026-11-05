@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { GolfClub, Review } from './types';
+import type { GolfClub } from './types';
 import { ClubMap, type MapStyle } from './components/ClubMap';
 import { ClubList } from './components/ClubList';
 import { ClubDetail } from './components/ClubDetail';
@@ -11,7 +11,10 @@ import { fetchGolfClubs } from './lib/overpass';
 import { demoClubsAround } from './data/demoClubs';
 import { distanceKm } from './lib/geo';
 import { ratingFor } from './lib/rating';
-import { loadFavorites, loadReviews, saveFavorites, saveReviews } from './lib/storage';
+import { loadFavorites, saveFavorites } from './lib/storage';
+import { api, type RatingSummary } from './lib/api';
+import { useAuth } from './lib/auth';
+import { AuthDialog } from './components/AuthDialog';
 
 const FALLBACK: [number, number] = [48.137, 11.575]; // München
 const INITIAL_RADIUS = 25_000;
@@ -31,8 +34,12 @@ export default function App() {
   const [mapStyle, setMapStyle] = useState<MapStyle>('map');
   const [focus, setFocus] = useState<{ lat: number; lon: number; zoom: number } | null>(null);
   const [pendingArea, setPendingArea] = useState<{ lat: number; lon: number; r: number } | null>(null);
-  const [reviews, setReviews] = useState<Review[]>(loadReviews);
+  const { user, logout } = useAuth();
+  const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
+  const [ratingsKey, setRatingsKey] = useState(0);
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
+  const [authReason, setAuthReason] = useState<string | null>(null);
+  const [userMenu, setUserMenu] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(true);
   const [statsOpen, setStatsOpen] = useState(false);
   const [courseClub, setCourseClub] = useState<GolfClub | null>(null);
@@ -81,8 +88,45 @@ export default function App() {
     );
   }, [search]);
 
-  useEffect(() => saveReviews(reviews), [reviews]);
-  useEffect(() => saveFavorites(favorites), [favorites]);
+  // Bewertungen der App-Nutzer für die geladenen Clubs holen
+  useEffect(() => {
+    if (!clubs.length) return;
+    let cancelled = false;
+    api
+      .ratings(clubs.slice(0, 300).map((c) => c.id))
+      .then((r) => !cancelled && setRatings(r))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [clubs, ratingsKey]);
+
+  // Favoriten: angemeldet → vom Server (lokale werden einmalig übernommen), sonst lokal
+  useEffect(() => {
+    if (!user) {
+      setFavorites(loadFavorites());
+      return;
+    }
+    const local = loadFavorites();
+    Promise.all(local.map((id) => api.addFavorite(id)))
+      .then(() => api.favorites())
+      .then((f) => {
+        setFavorites(f);
+        saveFavorites([]);
+      })
+      .catch(() => undefined);
+  }, [user]);
+
+  const toggleFavorite = (id: string) => {
+    const isFav = favorites.includes(id);
+    const next = isFav ? favorites.filter((x) => x !== id) : [...favorites, id];
+    setFavorites(next);
+    if (!user) return saveFavorites(next);
+    (isFav ? api.removeFavorite(id) : api.addFavorite(id)).catch(() => {
+      setFavorites(favorites); // zurücksetzen, wenn der Server nicht erreichbar ist
+      alert('Favorit konnte nicht gespeichert werden – keine Verbindung zum Server.');
+    });
+  };
 
   const ref = userPos ?? center;
   const visibleClubs = useMemo(() => {
@@ -93,11 +137,11 @@ export default function App() {
       .map((c) => ({ ...c, distance: ref ? distanceKm(ref[0], ref[1], c.lat, c.lon) : null }));
     list.sort((a, b) => {
       if (sort === 'name') return a.name.localeCompare(b.name, 'de');
-      if (sort === 'rating') return ratingFor(b, reviews).average - ratingFor(a, reviews).average;
+      if (sort === 'rating') return ratingFor(b, ratings[b.id]).average - ratingFor(a, ratings[a.id]).average;
       return (a.distance ?? 0) - (b.distance ?? 0);
     });
     return list;
-  }, [clubs, query, onlyFavs, favorites, ref, sort, reviews]);
+  }, [clubs, query, onlyFavs, favorites, ref, sort, ratings]);
 
   const selected = visibleClubs.find((c) => c.id === selectedId) ?? clubs.find((c) => c.id === selectedId) ?? null;
 
@@ -162,6 +206,31 @@ export default function App() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <div className="user-area">
+          <button
+            className={`avatar${user ? ' on' : ''}`}
+            onClick={() => (user ? setUserMenu(!userMenu) : setAuthReason(''))}
+            title={user ? user.name : 'Anmelden'}
+            aria-label={user ? `Konto von ${user.name}` : 'Anmelden'}
+          >
+            {user ? user.name.slice(0, 1).toUpperCase() : '👤'}
+          </button>
+          {user && userMenu && (
+            <div className="user-menu">
+              <strong>{user.name}</strong>
+              <span className="muted small">{user.email}</span>
+              <button
+                className="btn"
+                onClick={async () => {
+                  setUserMenu(false);
+                  await logout();
+                }}
+              >
+                Abmelden
+              </button>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="map-controls">
@@ -245,24 +314,21 @@ export default function App() {
             key={selected.id}
             club={selected}
             distance={ref ? distanceKm(ref[0], ref[1], selected.lat, selected.lon) : null}
-            reviews={reviews}
+            rating={ratings[selected.id]}
             isFavorite={favorites.includes(selected.id)}
             onClose={() => setSelectedId(null)}
-            onToggleFavorite={() =>
-              setFavorites((f) => (f.includes(selected.id) ? f.filter((x) => x !== selected.id) : [...f, selected.id]))
-            }
+            onToggleFavorite={() => toggleFavorite(selected.id)}
             onViewCourse={() => {
               setMapStyle('satellite');
               setFocus({ lat: selected.lat, lon: selected.lon, zoom: 16 });
               if (window.innerWidth < 768) setSheetOpen(false);
             }}
             onPlay={() => setCourseClub(selected)}
-            onAddReview={(stars, text, author) =>
-              setReviews((r) => [...r, { clubId: selected.id, stars, text, author, date: new Date().toISOString() }])
-            }
+            onReviewed={() => setRatingsKey((k) => k + 1)}
+            onRequireLogin={setAuthReason}
           />
         ) : statsOpen ? (
-          <StatsView onClose={() => setStatsOpen(false)} />
+          <StatsView onClose={() => setStatsOpen(false)} onLogin={() => setAuthReason('Melde dich an, um deine Runden zu sichern.')} />
         ) : (
           <>
             <div className="panel-head">
@@ -285,11 +351,13 @@ export default function App() {
               </div>
               {notice && <p className="notice">{notice}</p>}
             </div>
-            <ClubList clubs={visibleClubs} reviews={reviews} favorites={favorites} selectedId={selectedId} onSelect={select} />
+            <ClubList clubs={visibleClubs} ratings={ratings} favorites={favorites} selectedId={selectedId} onSelect={select} />
           </>
         )}
       </aside>
       )}
+
+      {authReason !== null && <AuthDialog reason={authReason || undefined} onClose={() => setAuthReason(null)} />}
     </div>
   );
 }
