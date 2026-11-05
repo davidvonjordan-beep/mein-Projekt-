@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CourseLayout, GolfClub, LatLon } from '../types';
 import { fetchCourseLayout, holeTarget } from './courseLayout';
 import { demoCourseLayout } from '../data/demoCourse';
-import { distM, greenDistances, type Unit } from './courseGeo';
+import { distM, greenDistances, toXY, type Unit } from './courseGeo';
 import { loadScores, saveScores } from './storage';
 
 /** Ab dieser Entfernung zum Club gilt der Spieler als „nicht auf dem Platz“. */
@@ -18,6 +18,7 @@ export function useCourse(club: GolfClub | null) {
   const [unit, setUnit] = useState<Unit>('m');
   const [scores, setScores] = useState<Record<number, number>>({});
   const [fitKey, setFitKey] = useState(0);
+  const [followHole, setFollowHole] = useState(true);
 
   // Platzdaten laden
   useEffect(() => {
@@ -76,6 +77,14 @@ export function useCourse(club: GolfClub | null) {
       ? { toPoint: distM(player, measure), pointToGreen: target ? distM(measure, target.target) : null }
       : null;
 
+  // Spielrichtung: Abschlag → Ziel als Kompasswinkel (0° = Norden)
+  const holeBearing = useMemo(() => {
+    if (!hole || !target) return 0;
+    const [x, y] = toXY(target.target, hole.path[0]);
+    return ((Math.atan2(x, y) * 180) / Math.PI + 360) % 360;
+  }, [hole, target]);
+  const bearing = followHole && hole ? holeBearing : 0;
+
   const fit = useMemo(() => {
     if (!club) return null;
     const points: LatLon[] = hole ? [...hole.path, ...(target?.green ?? [])] : [[club.lat, club.lon]];
@@ -99,6 +108,9 @@ export function useCourse(club: GolfClub | null) {
     unit,
     scores,
     fit,
+    bearing,
+    followHole,
+    setFollowHole,
     setUnit,
     setMeasure,
     selectHole: (i: number) => {

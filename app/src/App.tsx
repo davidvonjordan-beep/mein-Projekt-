@@ -130,6 +130,7 @@ export default function App() {
         style={courseClub ? 'satellite' : mapStyle}
         focus={focus}
         fit={courseClub ? course.fit : null}
+        bearing={courseClub ? course.bearing : 0}
         onSelect={select}
         onMoved={onMoved}
         onMapClick={courseClub ? (lat, lon) => course.setMeasure([lat, lon]) : undefined}
@@ -182,6 +183,21 @@ export default function App() {
       )}
 
       </>
+      )}
+
+      {courseClub && course.hole && (
+        <div className="map-controls course-controls">
+          <button
+            className={`fab compass${course.followHole ? ' on' : ''}`}
+            onClick={() => course.setFollowHole(!course.followHole)}
+            title={course.followHole ? 'Norden nach oben' : 'In Spielrichtung drehen'}
+            aria-label={course.followHole ? 'Norden nach oben' : 'In Spielrichtung drehen'}
+          >
+            <span className="needle" style={{ transform: `rotate(${-course.bearing}deg)` }}>
+              <span className="n">N</span>▲
+            </span>
+          </button>
+        </div>
       )}
 
       {courseClub ? (
