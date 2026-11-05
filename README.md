@@ -49,6 +49,8 @@ npm run dev
 ```
 Tests des Servers: `cd server && npm test`
 
+Demo ohne Server als eine HTML-Datei (z. B. zum Teilen): `cd app && npm run build:demo` → `app/dist-demo/index.html`
+
 ## Betrieb (Produktion)
 ```bash
 cd app && npm install && npm run build      # baut die App nach app/dist

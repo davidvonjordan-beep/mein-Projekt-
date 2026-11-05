@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
+import { ConfirmButton } from './ConfirmButton';
+import { DEMO } from '../lib/demo';
 import type { Round } from '../types';
 import { clubLabel, clubStats, deleteRound, formatToPar, loadHistory, ROUNDS_CHANGED, roundTotals, shotDistances, syncRounds } from '../lib/rounds';
 
@@ -28,7 +30,7 @@ export function StatsView({ onClose, onLogin }: Props) {
         <h2>Meine Runden</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Schließen">✕</button>
       </div>
-      {!user && (
+      {!user && !DEMO && (
         <div className="notice sync-hint">
           Deine Runden sind nur auf diesem Gerät gespeichert.{' '}
           <button className="link-btn inline" onClick={onLogin}>Anmelden & sichern</button>
@@ -94,17 +96,17 @@ export function StatsView({ onClose, onLogin }: Props) {
                           })()}
                         </p>
                       )}
-                      <button
+                      <ConfirmButton
                         className="link-btn danger"
-                        onClick={() => {
-                          if (!confirm('Diese Runde löschen?')) return;
+                        label="Runde löschen"
+                        question="Diese Runde löschen?"
+                        confirmLabel="Löschen"
+                        onConfirm={() => {
                           deleteRound(r.id);
                           setHistory(loadHistory());
                           syncRounds();
                         }}
-                      >
-                        Runde löschen
-                      </button>
+                      />
                     </div>
                   )}
                 </li>

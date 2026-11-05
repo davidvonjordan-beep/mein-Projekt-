@@ -15,6 +15,7 @@ import { loadFavorites, saveFavorites } from './lib/storage';
 import { api, type RatingSummary } from './lib/api';
 import { useAuth } from './lib/auth';
 import { AuthDialog } from './components/AuthDialog';
+import { DEMO } from './lib/demo';
 
 const FALLBACK: [number, number] = [48.137, 11.575]; // München
 const INITIAL_RADIUS = 25_000;
@@ -56,12 +57,13 @@ export default function App() {
     setLoading(true);
     setNotice(null);
     try {
+      if (DEMO) throw new Error('Demo-Modus');
       const result = await fetchGolfClubs(lat, lon, radius, ctrl.signal);
       setClubs(result);
     } catch (e) {
       if ((e as Error).name === 'AbortError') return;
       setClubs(demoClubsAround(lat, lon));
-      setNotice('OpenStreetMap ist gerade nicht erreichbar – es werden Demo-Clubs angezeigt.');
+      if (!DEMO) setNotice('OpenStreetMap ist gerade nicht erreichbar – es werden Demo-Clubs angezeigt.');
     } finally {
       if (abortRef.current === ctrl) setLoading(false);
     }
@@ -73,7 +75,7 @@ export default function App() {
       setCenter(pos);
       search(pos[0], pos[1], INITIAL_RADIUS);
     };
-    if (!navigator.geolocation) return start(FALLBACK);
+    if (DEMO || !navigator.geolocation) return start(FALLBACK);
     navigator.geolocation.getCurrentPosition(
       (p) => {
         const pos: [number, number] = [p.coords.latitude, p.coords.longitude];
@@ -90,7 +92,7 @@ export default function App() {
 
   // Bewertungen der App-Nutzer für die geladenen Clubs holen
   useEffect(() => {
-    if (!clubs.length) return;
+    if (!clubs.length || DEMO) return;
     let cancelled = false;
     api
       .ratings(clubs.slice(0, 300).map((c) => c.id))
@@ -124,7 +126,7 @@ export default function App() {
     if (!user) return saveFavorites(next);
     (isFav ? api.removeFavorite(id) : api.addFavorite(id)).catch(() => {
       setFavorites(favorites); // zurücksetzen, wenn der Server nicht erreichbar ist
-      alert('Favorit konnte nicht gespeichert werden – keine Verbindung zum Server.');
+      setNotice('Favorit konnte nicht gespeichert werden – keine Verbindung zum Server.');
     });
   };
 
@@ -206,6 +208,7 @@ export default function App() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        {!DEMO && (
         <div className="user-area">
           <button
             className={`avatar${user ? ' on' : ''}`}
@@ -231,12 +234,15 @@ export default function App() {
             </div>
           )}
         </div>
+        )}
       </header>
 
       <div className="map-controls">
-        <button className="fab" onClick={() => setMapStyle(mapStyle === 'map' ? 'satellite' : 'map')} title="Kartenansicht wechseln">
-          {mapStyle === 'map' ? '🛰️' : '🗺️'}
-        </button>
+        {!DEMO && (
+          <button className="fab" onClick={() => setMapStyle(mapStyle === 'map' ? 'satellite' : 'map')} title="Kartenansicht wechseln">
+            {mapStyle === 'map' ? '🛰️' : '🗺️'}
+          </button>
+        )}
         {userPos && (
           <button className="fab" onClick={() => setFocus({ lat: userPos[0], lon: userPos[1], zoom: 11 })} title="Mein Standort">
             📍
@@ -349,6 +355,11 @@ export default function App() {
                   📊 Meine Runden
                 </button>
               </div>
+              {DEMO && (
+                <p className="notice demo-note">
+                  <strong>Demo-Version.</strong> Erfundene Clubs rund um München, ohne Kartenbild und Login. Probier „⛳ Auf dem Platz“ aus!
+                </p>
+              )}
               {notice && <p className="notice">{notice}</p>}
             </div>
             <ClubList clubs={visibleClubs} ratings={ratings} favorites={favorites} selectedId={selectedId} onSelect={select} />

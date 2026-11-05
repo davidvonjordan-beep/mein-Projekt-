@@ -3,6 +3,7 @@ import L from 'leaflet';
 import { CircleMarker, MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import type { GolfClub, LatLon } from '../types';
 import { fromXY, toXY } from '../lib/courseGeo';
+import { DEMO } from '../lib/demo';
 
 export type MapStyle = 'map' | 'satellite';
 
@@ -99,14 +100,14 @@ export function ClubMap({ center, userPos, clubs, selectedId, style, focus, fit,
       zoom={11}
       maxZoom={20}
       zoomSnap={0.25}
-      className="map"
+      className={DEMO ? 'map no-tiles' : 'map'}
       zoomControl={false}
       rotate
       rotateControl={false}
       touchRotate={false}
       shiftKeyRotate={false}
     >
-      {style === 'map' ? (
+      {DEMO ? null : style === 'map' ? (
         <TileLayer
           key="osm"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

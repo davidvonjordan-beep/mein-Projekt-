@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { GolfClub } from '../types';
 import { api, type RatingSummary, type ServerReview } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { DEMO } from '../lib/demo';
 import { formatDistance } from '../lib/geo';
 import { ratingFor } from '../lib/rating';
 import { StarRating } from './StarRating';
@@ -30,6 +31,7 @@ export function ClubDetail({ club, distance, rating: serverRating, isFavorite, o
   const mine = clubReviews?.find((r) => r.mine);
 
   const loadReviews = useCallback(() => {
+    if (DEMO) return setClubReviews([]);
     api
       .reviews(club.id)
       .then(setClubReviews)
@@ -111,7 +113,9 @@ export function ClubDetail({ club, distance, rating: serverRating, isFavorite, o
 
       <section className="reviews">
         <h3>Bewertungen</h3>
-        {user ? (
+        {DEMO ? (
+          <p className="muted small">In der Demo-Version können keine Bewertungen abgegeben werden – dafür braucht es den GolfMap-Server.</p>
+        ) : user ? (
           <form className="review-form" onSubmit={submit}>
             <label>{mine ? 'Deine Bewertung bearbeiten' : `Deine Bewertung als ${user.name}`}</label>
             <StarRating value={stars} onChange={setStars} size={26} />

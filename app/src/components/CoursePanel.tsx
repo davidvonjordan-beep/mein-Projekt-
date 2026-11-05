@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ConfirmButton } from './ConfirmButton';
 import type { CourseHole, CourseLayout, GolfClub, LatLon, Shot } from '../types';
 import { CLUBS, clubLabel, shotDistances, type ClubStat } from '../lib/rounds';
 import { formatLen, pathLength, type GreenDistances, type Unit } from '../lib/courseGeo';
@@ -183,9 +184,12 @@ export function CoursePanel(p: Props) {
               </tr>
             </tbody>
           </table>
-          <button className="link-btn" onClick={() => confirm('Runde beenden und unter „Meine Runden“ speichern?') && p.onFinishRound()}>
-            ✓ Runde beenden & speichern
-          </button>
+          <ConfirmButton
+            label="✓ Runde beenden & speichern"
+            question="Runde beenden und speichern?"
+            confirmLabel="Beenden"
+            onConfirm={p.onFinishRound}
+          />
         </div>
       )}
     </div>
