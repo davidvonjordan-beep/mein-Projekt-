@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { ConfirmButton } from './ConfirmButton';
-import { DEMO } from '../lib/demo';
 import type { Round } from '../types';
 import { clubLabel, clubStats, deleteRound, formatToPar, loadHistory, ROUNDS_CHANGED, roundTotals, shotDistances, syncRounds } from '../lib/rounds';
 
@@ -11,7 +10,7 @@ interface Props {
 }
 
 export function StatsView({ onClose, onLogin }: Props) {
-  const { user } = useAuth();
+  const { user, serverAvailable } = useAuth();
   const [tab, setTab] = useState<'rounds' | 'clubs'>('rounds');
   const [history, setHistory] = useState<Round[]>(loadHistory);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -30,7 +29,7 @@ export function StatsView({ onClose, onLogin }: Props) {
         <h2>Meine Runden</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Schließen">✕</button>
       </div>
-      {!user && !DEMO && (
+      {!user && serverAvailable && (
         <div className="notice sync-hint">
           Deine Runden sind nur auf diesem Gerät gespeichert.{' '}
           <button className="link-btn inline" onClick={onLogin}>Anmelden & sichern</button>

@@ -69,6 +69,18 @@ async function request<T>(path: string, opts: { method?: string; body?: unknown 
   return data as T;
 }
 
+/** Prüft, ob ein GolfMap-Server erreichbar ist (fehlt z. B. bei GitHub Pages). */
+export async function checkServer(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/health');
+    if (!res.ok) return false;
+    const data = (await res.json()) as { ok?: boolean };
+    return data.ok === true;
+  } catch {
+    return false;
+  }
+}
+
 export const api = {
   register: (email: string, password: string, name: string) =>
     request<{ token: string; user: User }>('/api/auth/register', { body: { email, password, name } }),

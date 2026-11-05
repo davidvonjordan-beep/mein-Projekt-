@@ -21,7 +21,8 @@ interface Props {
 }
 
 export function ClubDetail({ club, distance, rating: serverRating, isFavorite, onClose, onToggleFavorite, onViewCourse, onPlay, onReviewed, onRequireLogin }: Props) {
-  const { user } = useAuth();
+  const { user, serverAvailable } = useAuth();
+  const hasServer = serverAvailable === true;
   const [stars, setStars] = useState(0);
   const [text, setText] = useState('');
   const [clubReviews, setClubReviews] = useState<ServerReview[] | null>(null);
@@ -31,12 +32,12 @@ export function ClubDetail({ club, distance, rating: serverRating, isFavorite, o
   const mine = clubReviews?.find((r) => r.mine);
 
   const loadReviews = useCallback(() => {
-    if (DEMO) return setClubReviews([]);
+    if (!hasServer) return setClubReviews([]);
     api
       .reviews(club.id)
       .then(setClubReviews)
       .catch(() => setClubReviews([]));
-  }, [club.id]);
+  }, [club.id, hasServer]);
   useEffect(loadReviews, [loadReviews, user]);
 
   // Eigene Bewertung zum Bearbeiten vorausfüllen
@@ -113,8 +114,12 @@ export function ClubDetail({ club, distance, rating: serverRating, isFavorite, o
 
       <section className="reviews">
         <h3>Bewertungen</h3>
-        {DEMO ? (
-          <p className="muted small">In der Demo-Version können keine Bewertungen abgegeben werden – dafür braucht es den GolfMap-Server.</p>
+        {!hasServer ? (
+          <p className="muted small">
+            {DEMO
+              ? 'In der Demo-Version können keine Bewertungen abgegeben werden – dafür braucht es den GolfMap-Server.'
+              : 'Bewertungen abgeben ist bald möglich – dafür wird gerade der GolfMap-Server eingerichtet.'}
+          </p>
         ) : user ? (
           <form className="review-form" onSubmit={submit}>
             <label>{mine ? 'Deine Bewertung bearbeiten' : `Deine Bewertung als ${user.name}`}</label>

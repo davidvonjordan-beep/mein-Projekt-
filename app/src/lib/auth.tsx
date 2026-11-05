@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { api, ApiError, getToken, setToken, type User } from './api';
+import { api, ApiError, checkServer, getToken, setToken, type User } from './api';
+import { DEMO } from './demo';
 import { clearLocalRounds, syncRounds } from './rounds';
 import { read, write } from './storage';
 
@@ -7,6 +8,8 @@ const USER_KEY = 'golfmap.user';
 
 interface AuthState {
   user: User | null;
+  /** null = wird geprüft; false = ohne Server (nur lokale Funktionen) */
+  serverAvailable: boolean | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -17,6 +20,12 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Zuletzt bekannter Nutzer, damit die App auch offline angemeldet bleibt
   const [user, setUser] = useState<User | null>(() => (getToken() ? read<User | null>(USER_KEY, null) : null));
+
+  const [serverAvailable, setServerAvailable] = useState<boolean | null>(DEMO ? false : null);
+  useEffect(() => {
+    if (DEMO) return;
+    checkServer().then(setServerAvailable);
+  }, []);
 
   const applySession = useCallback((token: string, u: User) => {
     setToken(token);
@@ -76,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  return <AuthContext.Provider value={{ user, login, register, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, serverAvailable, login, register, logout }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

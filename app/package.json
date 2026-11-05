@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "build:demo": "tsc -b && vite build --mode demo"
+    "build:demo": "tsc -b && vite build --mode demo",
+    "build:pages": "tsc -b && vite build --base ./ --outDir dist-pages"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

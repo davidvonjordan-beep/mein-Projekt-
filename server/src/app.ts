@@ -49,6 +49,10 @@ export function createApp(db: DB, opts: { staticDir?: string } = {}) {
 
   const bad = (res: Response, msg: string, status = 400) => res.status(status).json({ error: msg });
 
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true });
+  });
+
   // ---------- Konto ----------
   const authLimiter = rateLimit(20, 15 * 60 * 1000);
 

@@ -35,7 +35,8 @@ export default function App() {
   const [mapStyle, setMapStyle] = useState<MapStyle>('map');
   const [focus, setFocus] = useState<{ lat: number; lon: number; zoom: number } | null>(null);
   const [pendingArea, setPendingArea] = useState<{ lat: number; lon: number; r: number } | null>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, serverAvailable } = useAuth();
+  const hasServer = serverAvailable === true;
   const [ratings, setRatings] = useState<Record<string, RatingSummary>>({});
   const [ratingsKey, setRatingsKey] = useState(0);
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
@@ -92,7 +93,7 @@ export default function App() {
 
   // Bewertungen der App-Nutzer für die geladenen Clubs holen
   useEffect(() => {
-    if (!clubs.length || DEMO) return;
+    if (!clubs.length || !hasServer) return;
     let cancelled = false;
     api
       .ratings(clubs.slice(0, 300).map((c) => c.id))
@@ -101,7 +102,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [clubs, ratingsKey]);
+  }, [clubs, ratingsKey, hasServer]);
 
   // Favoriten: angemeldet → vom Server (lokale werden einmalig übernommen), sonst lokal
   useEffect(() => {
@@ -208,7 +209,7 @@ export default function App() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        {!DEMO && (
+        {hasServer && (
         <div className="user-area">
           <button
             className={`avatar${user ? ' on' : ''}`}
